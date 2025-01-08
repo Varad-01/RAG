@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Medical Knowledge Assistant with RAG, Pinecone, and LLM  
 
-## Getting Started
+This project utilizes Pinecone for Retrieval-Augmented Generation (RAG), enabling efficient search and contextual insights from medical literature.  
 
-First, run the development server:
+## Key Features:  
+- **Medical Document Processing:** Converts medical book PDFs into smaller, manageable chunks for optimal storage and retrieval.  
+- **RAG with Pinecone:** Pushes processed chunks to Pinecone Vector Database for fast and accurate querying.  
+- **LLM Integration:** Utilizes Hugging Face's Mixed Bread LLM for generating context-aware responses.  
+- **Next.js UI:** A user-friendly interface built with Next.js for seamless interaction and querying.  
 
+---
+
+## Getting Started  
+
+### 1. Clone the Repository  
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Varad-01/RAG.git
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Install Dependencies  
+```bash
+npm install  
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Setup Environment Variables  
+- Create a `.env` file in the root directory.  
+- Add your **PINECONE_API_KEY** by signing up at [Pinecone](https://www.pinecone.io/) and creating an index.  
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+**Example `.env` file:**  
+```env
+PINECONE_API_KEY=your-pinecone-api-key  
+```
 
-## Learn More
+### 4. Add Documents  
+- Create a folder named **documents** in the project root.  
+- Place your medical PDF files in this folder for processing and uploading to Pinecone.  
 
-To learn more about Next.js, take a look at the following resources:
+### 5. Run the Project  
+```bash
+npm run dev  
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+The application will run on [http://localhost:3000](http://localhost:3000)  
