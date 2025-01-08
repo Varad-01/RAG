@@ -1,132 +1,171 @@
-"use client"
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
-import { Textarea } from '@/components/ui/textarea'
-import { Database, LucideLoader2, MoveUp, RefreshCcw } from 'lucide-react'
-import React, { useState } from 'react'
+"use client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { Database, MoveUp, RefreshCcw } from "lucide-react";
+import React, { useState } from "react";
 
-type Props = {}
+type Props = {};
 
 const VectorDBPage = (props: Props) => {
-    const [isUploading, setisUploading] = useState(false)
-    const [indexname, setIndexname] = useState("");
-    const [namespace, setNamespace] = useState("");
-    const [fileListAsText, setfileListAsText] = useState("");
-    
+  const [isUploading, setisUploading] = useState(false);
+  const [indexname, setIndexname] = useState("");
+  const [namespace, setNamespace] = useState("");
+  const [fileListAsText, setfileListAsText] = useState("");
 
-    const [filename, setFilename] = useState("");
-    const [progress, setProgress] = useState(0);
+  const [filename, setFilename] = useState("");
+  const [progress, setProgress] = useState(0);
 
-    const onFileListRefresh = async () => {
-        setfileListAsText("");
-        const response = await fetch('api/getfilelist', { method: 'GET' })
-        const filenames = await response.json();
-        console.log(filenames);
-        const resultString = (filenames as []).map(filename => `📄 ${filename}`).join('\n');
-        setfileListAsText(resultString);
+  const onFileListRefresh = async () => {
+    setfileListAsText("");
+    const response = await fetch("api/getfilelist", { method: "GET" });
+    const filenames = await response.json();
+    const resultString = (filenames as [])
+      .map((filename) => `📄 ${filename}`)
+      .join("\n");
+    setfileListAsText(resultString);
+  };
+
+  const onStartUpload = async () => {
+    setProgress(0);
+    setFilename("");
+    setisUploading(true);
+    const response = await fetch("api/updatedatabase", {
+      method: "POST",
+      body: JSON.stringify({
+        indexname,
+        namespace,
+      }),
+    });
+    await processStreamedProgress(response);
+  };
+
+  async function processStreamedProgress(response: Response) {
+    const reader = response.body?.getReader();
+    if (!reader) {
+      console.error("Reader was not found");
+      return;
     }
-
-    const onStartUpload = async () => {
-        setProgress(0);
-        setFilename("");
-        setisUploading(true);
-        const response = await fetch('api/updatedatabase', {
-            method: 'POST', body: JSON.stringify({
-                indexname,
-                namespace
-            })
-        })
-        console.log(response);
-        await processStreamedProgress(response);
-    }
-
-    async function processStreamedProgress(response: Response) {
-        const reader = response.body?.getReader();
-        if (!reader) {
-            console.error('Reader was not found');
-            return;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          setisUploading(false);
+          break;
         }
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    setisUploading(false);
-                    break;
-                }
 
-                const data = new TextDecoder().decode(value);
-                console.log(data);
-                const { filename, totalChunks, chunksUpserted, isComplete } = JSON.parse(data);
-                const currentProgress = (chunksUpserted / totalChunks) * 100;
-                setProgress(currentProgress);
-                setFilename(`${filename} [${chunksUpserted}/${totalChunks}]`)
-            }
-        } catch (error) {
-            console.error("Error reading response: ", error);
-        } finally {
-            reader.releaseLock();
-        }
+        const data = new TextDecoder().decode(value);
+        const { filename, totalChunks, chunksUpserted, isComplete } =
+          JSON.parse(data);
+        const currentProgress = (chunksUpserted / totalChunks) * 100;
+        setProgress(currentProgress);
+        setFilename(`${filename} [${chunksUpserted}/${totalChunks}]`);
+      }
+    } catch (error) {
+      console.error("Error reading response: ", error);
+    } finally {
+      reader.releaseLock();
     }
+  }
 
-    return (
-        <main className='flex flex-col items-center p-24'>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Update Knowledge Base</CardTitle>
-                    <CardDescription>Add new docuemnts to your vector DB</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className='grid grid-cols-3 gap-4'>
-                        <div className='col-span-2 grid gap-4 border rounded-lg p-6'>
-                            <div className='gap-4 relative'>
-                                <Button onClick={onFileListRefresh} className='absolute -right-4 -top-4' variant={'ghost'} size={'icon'}>
-                                    <RefreshCcw />
-                                </Button>
-                                <Label>Files List:</Label>
-                                <Textarea readOnly value={fileListAsText}
-                                    className='min-h-24 resize-none border p-3 shadow-none disabled:cursor-default focus-visible:ring-0 text-sm text-muted-foreground'
-                                />
-                            </div>
-                            <div className='grid grid-cols-2 gap-4'>
-                                <div className="grid gap-2">
-                                    <Label>
-                                        Index Name
-                                    </Label>
-                                    <Input value={indexname} onChange={e => setIndexname(e.target.value)} placeholder='index name' disabled={isUploading} className='disabled:cursor-default' />
-                                </div>
-                                <div className="grid gap-2">
-                                    <Label>
-                                        Namespace
-                                    </Label>
-                                    <Input value={namespace} onChange={e => setNamespace(e.target.value)} placeholder='namespace' disabled={isUploading} className='disabled:cursor-default' />
-                                </div>
-                            </div>
-                        </div>
-                        <Button onClick={onStartUpload} variant={'outline'} className='w-full h-full' disabled={isUploading}>
-                            <span className='flex flex-row'>
-                                <Database size={50} className='stroke-[#D90013]' />
-                                <MoveUp className='stroke-[#D90013]' />
-                            </span>
-                        </Button>
-                    </div>
-                    {isUploading && <div className='mt-4'>
-                        <Label>File Name: {filename}</Label>
-                        <div className='flex flex-row items-center gap-4'>
-                            <Progress value={progress} />
-                            <LucideLoader2 className='stroke-[#D90013] animate-spin' />
-                        </div>
-                    </div>}
-                </CardContent>
-            </Card>
-        </main>
-    )
-}
+  return (
+    <main className="flex flex-col items-center justify-center p-8 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300 min-h-screen">
+      <Card className="w-full max-w-3xl shadow-xl rounded-2xl bg-white">
+        <CardHeader className="bg-indigo-600 p-8 rounded-t-2xl">
+          <CardTitle className="text-3xl font-bold text-white">
+            Update Knowledge Base
+          </CardTitle>
+          <CardDescription className="text-sm text-white opacity-80">
+            Add new documents to your vector DB seamlessly.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="col-span-2 lg:col-span-1 space-y-4">
+              <div className="relative">
+                <Button
+                  onClick={onFileListRefresh}
+                  className="absolute top-0 right-0 transform -translate-x-2 -translate-y-2 bg-transparent text-gray-500 hover:text-gray-700 transition-transform"
+                  variant="ghost"
+                  size="icon"
+                >
+                  <RefreshCcw className="w-6 h-6" />
+                </Button>
+                <Label className="text-lg text-gray-700">Files List:</Label>
+                <Textarea
+                  readOnly
+                  value={fileListAsText}
+                  className="min-h-32 w-full resize-none rounded-xl border-2 border-gray-300 bg-gray-50 p-4 text-gray-700 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
 
-export default VectorDBPage
+              <div className="space-y-4">
+                <div>
+                  <Label>Index Name</Label>
+                  <Input
+                    value={indexname}
+                    onChange={(e) => setIndexname(e.target.value)}
+                    placeholder="Enter index name"
+                    disabled={isUploading}
+                    className="text-gray-700 border-2 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <Label>Namespace</Label>
+                  <Input
+                    value={namespace}
+                    onChange={(e) => setNamespace(e.target.value)}
+                    placeholder="Enter namespace"
+                    disabled={isUploading}
+                    className="text-gray-700 border-2 rounded-xl p-4 focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
 
+            <div className="col-span-2 lg:col-span-1 flex items-center justify-center">
+              <Button
+                onClick={onStartUpload}
+                variant="outline"
+                className="flex items-center justify-center w-full py-4 px-6 text-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-400"
+                disabled={isUploading}
+              >
+                <Database className="mr-2 w-6 h-6" />
+                <MoveUp className="w-6 h-6" />
+                <span className="ml-2">Start Upload</span>
+              </Button>
+            </div>
+          </div>
 
+          {isUploading && (
+            <div className="mt-6">
+              <Label className="text-lg text-gray-700">
+                File Name: {filename}
+              </Label>
+              <div className="flex items-center space-x-4">
+                <Progress
+                  value={progress}
+                  className="flex-1 h-2 bg-indigo-500 rounded-full"
+                />
+                <div className="text-gray-600 font-medium">
+                  {Math.round(progress)}%
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </main>
+  );
+};
 
-
+export default VectorDBPage;
